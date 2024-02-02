@@ -5,31 +5,34 @@ use std::str;
 
 #[derive(Debug)]
 struct Sink {
+    name: String,
     active: bool,
     id: String,
 }
 
 fn main() {
-    let headphones = get_sink("Razer");
-    let speakers = get_sink("Starship");
+    let headphones = get_sink("Razer", "headphones");
+    let speakers = get_sink("Starship", "speakers");
 
-    println!("sink for Razer: {:?}", headphones);
-    println!("sink for speakers: {:?}", speakers);
+    // println!("sink for Razer: {:?}", headphones);
+    // println!("sink for speakers: {:?}", speakers);
 
     let new_active = if headphones.active {
-        speakers.id
+        speakers
     } else {
-        headphones.id
+        headphones
     };
+
+    println!("settings {} as active!", new_active.name);
 
     Command::new("wpctl")
         .arg("set-default")
-        .arg(new_active)
+        .arg(new_active.id)
         .spawn()
         .unwrap();
 }
 
-fn get_sink(name: &str) -> Sink {
+fn get_sink(device_name: &str, name: &str) -> Sink {
     let ps_child = Command::new("wpctl")
         .arg("status")
         .stdout(Stdio::piped())
@@ -44,7 +47,7 @@ fn get_sink(name: &str) -> Sink {
         .spawn()
         .unwrap();
     let grep_child_two = Command::new("grep")
-        .arg(name)
+        .arg(device_name)
         .stdin(Stdio::from(grep_child_one.stdout.unwrap()))
         .stdout(Stdio::piped())
         .spawn()
@@ -65,8 +68,8 @@ fn get_sink(name: &str) -> Sink {
     let id = &caps[0];
 
     Sink {
+        name: name.to_string(),
         active,
         id: id.to_string(),
     }
 }
-
